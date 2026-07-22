@@ -1,0 +1,13 @@
+name: Feature request
+description: Propose a focused collection-audit improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: Problem, description: What filename convention is not covered? }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Proposed behavior, description: Explain conservative handling and ambiguous cases. }
+    validations: { required: true }

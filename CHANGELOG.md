@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 - Unreleased
+
+- Add per-series expected ranges and reasoned intentional omissions with bounded validation.
+
 ## 1.0.0 - 2026-07-22
 
 - Detect likely missing and duplicate issue numbers from local comic filenames.

@@ -21,12 +21,17 @@ def scan_directory(
     recursive: bool = False,
     expected_start: int | None = None,
     expected_end: int | None = None,
+    expectations: dict[str, object] | None = None,
 ) -> ScanReport:
     scan_root = root.expanduser().resolve()
     if not scan_root.is_dir():
         raise ValueError(f"scan root is not a directory: {scan_root}")
     if expected_start is not None and expected_end is not None and expected_start > expected_end:
         raise ValueError("expected start cannot be greater than expected end")
+
+    rules = validate_expectations({} if expectations is None else expectations)
+    validate_bound(expected_start)
+    validate_bound(expected_end)
 
     candidates = scan_root.rglob("*") if recursive else scan_root.glob("*")
     parsed: list[ParsedComic] = []
@@ -52,15 +57,16 @@ def scan_directory(
         grouped[key].append(comic)
         display_names.setdefault(key, comic.series)
 
-    reports = [
-        build_series_report(
-            display_names[key],
-            comics,
-            expected_start=expected_start,
-            expected_end=expected_end,
+    reports = []
+    for key in sorted(set(grouped) | set(rules)):
+        name, start, end, omissions = rules.get(
+            key, (display_names.get(key, key), expected_start, expected_end, {})
         )
-        for key, comics in sorted(grouped.items())
-    ]
+        reports.append(
+            build_series_report(
+                name, grouped[key], expected_start=start, expected_end=end, omissions=omissions
+            )
+        )
     return ScanReport(scan_root, reports, ambiguous, ignored)
 
 
@@ -103,6 +109,7 @@ def build_series_report(
     *,
     expected_start: int | None,
     expected_end: int | None,
+    omissions: dict[int, str] | None = None,
 ) -> SeriesReport:
     ordered = sorted(comics, key=lambda comic: (comic.issue, comic.path.as_posix().casefold()))
     by_issue: dict[Decimal, list[ParsedComic]] = defaultdict(list)
@@ -117,8 +124,15 @@ def build_series_report(
         end = expected_end
     else:
         end = integers[-1] if integers else -1
+    validate_bound(start)
+    validate_bound(end)
+    if end >= start and end - start + 1 > 101001:
+        raise ValueError("expected range exceeds 101001 issues")
     present = set(integers)
-    missing = [issue for issue in range(start, end + 1) if issue not in present]
+    omitted = omissions or {}
+    missing = [
+        issue for issue in range(start, end + 1) if issue not in present and issue not in omitted
+    ]
     duplicates = {
         format(issue, "f"): [comic.path.as_posix() for comic in matches]
         for issue, matches in sorted(by_issue.items())
@@ -127,7 +141,7 @@ def build_series_report(
     non_integer = [
         format(issue, "f") for issue in sorted(by_issue) if issue != issue.to_integral_value()
     ]
-    return SeriesReport(name, ordered, missing, duplicates, non_integer)
+    return SeriesReport(name, ordered, missing, duplicates, non_integer, omitted)
 
 
 def decimal_issue(value: str) -> Decimal | None:
@@ -150,3 +164,42 @@ def clean_series(value: str) -> str:
 
 def normalize_series(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", value.casefold())
+
+
+def validate_bound(value: int | None) -> None:
+    if value is not None and (type(value) is not int or not -1000 <= value <= 100000):
+        raise ValueError("expected bounds must be integers between -1000 and 100000")
+
+
+def validate_expectations(
+    data: dict[str, object],
+) -> dict[str, tuple[str, int | None, int | None, dict[int, str]]]:
+    if not isinstance(data, dict):
+        raise TypeError("expectations must be a series-name object")
+    result = {}
+    for name, rule in data.items():
+        key = normalize_series(name)
+        if not key or key in result or not isinstance(rule, dict):
+            raise ValueError("empty, duplicate normalized series or invalid rule")
+        if set(rule) - {"start", "end", "omissions"}:
+            raise ValueError("unknown expectation field")
+        start, end = rule.get("start"), rule.get("end")
+        validate_bound(start)
+        validate_bound(end)
+        if start is None or end is None or start > end:
+            raise ValueError("each series requires ordered start and end integers")
+        raw = rule.get("omissions", {})
+        if not isinstance(raw, dict):
+            raise TypeError("omissions must map integer issue numbers to reasons")
+        omitted = {}
+        for number, reason in raw.items():
+            if not isinstance(number, str) or not re.fullmatch(r"-?\d+", number):
+                raise ValueError("omission numbers must be integer strings")
+            issue = int(number)
+            if issue in omitted or not start <= issue <= end:
+                raise ValueError("duplicate omission or issue outside expected range")
+            if not isinstance(reason, str) or not reason.strip():
+                raise ValueError("each intentional omission requires a reason")
+            omitted[issue] = reason.strip()
+        result[key] = (name, start, end, omitted)
+    return result

@@ -30,8 +30,11 @@ class SeriesReport:
     duplicates: dict[str, list[str]] = field(default_factory=dict)
     non_integer_issues: list[str] = field(default_factory=list)
 
+    intentional_omissions: dict[int, str] = field(default_factory=dict)
+
     def to_dict(self) -> dict[str, Any]:
         return {
+            "intentionalOmissions": {str(k): v for k, v in self.intentional_omissions.items()},
             "name": self.name,
             "issues": [comic.to_dict() for comic in self.comics],
             "missing": self.missing,

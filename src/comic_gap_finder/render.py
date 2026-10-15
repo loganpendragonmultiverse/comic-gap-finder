@@ -39,6 +39,12 @@ def render_markdown(report: ScanReport) -> str:
                 "",
             ]
         )
+        if series.intentional_omissions:
+            lines.extend(["Intentional omissions:", ""])
+            lines.extend(
+                f"- #{n}: {reason}" for n, reason in sorted(series.intentional_omissions.items())
+            )
+            lines.append("")
     if report.ambiguous:
         lines.extend(
             ["## Ambiguous filenames", "", *[f"- {item}" for item in report.ambiguous], ""]

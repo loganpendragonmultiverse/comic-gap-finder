@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from comic_gap_finder.cli import main
-from comic_gap_finder.render import render_json, render_markdown
 from comic_gap_finder.core import scan_directory
+from comic_gap_finder.render import render_json, render_markdown
 
 
 def test_renderers_and_cli_outputs(tmp_path: Path) -> None:

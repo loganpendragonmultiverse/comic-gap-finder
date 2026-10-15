@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -16,6 +17,9 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     result.add_argument("root", type=Path)
+    result.add_argument(
+        "--expectations", type=Path, help="JSON per-series ranges and omission reasons"
+    )
     result.add_argument("--recursive", action="store_true")
     result.add_argument("--expected-start", type=int)
     result.add_argument("--expected-end", type=int)
@@ -33,6 +37,9 @@ def main(argv: list[str] | None = None) -> int:
             recursive=args.recursive,
             expected_start=args.expected_start,
             expected_end=args.expected_end,
+            expectations=json.loads(args.expectations.read_text(encoding="utf-8"))
+            if args.expectations
+            else None,
         )
         markdown = render_markdown(report)
         if args.json_path:
@@ -43,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
             print(markdown)
         has_gaps = any(series.missing for series in report.series)
         return 1 if args.fail_on_gaps and has_gaps else 0
-    except (OSError, ValueError) as exc:
+    except (OSError, TypeError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

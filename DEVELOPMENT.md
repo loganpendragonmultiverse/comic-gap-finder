@@ -5,7 +5,7 @@ Version 1 performs a read-only, metadata-free filename audit. Ambiguous filename
 Archive contents, external databases, rename operations, and editorial claims about true completeness are outside this release.
 
 
-## 1.1.0 candidate
+## Version 1.1.0
 
 Use `--expectations expectations.json` to apply a separate integer range to each named series:
 

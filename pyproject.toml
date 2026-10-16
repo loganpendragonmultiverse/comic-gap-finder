@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comic-gap-finder"
-version = "1.1.0"
+version = "1.1.1"
 description = "Find likely missing issue numbers and anomalies from local comic filenames."
 readme = "README.md"
 requires-python = ">=3.10"

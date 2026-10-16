@@ -6,7 +6,7 @@ Comic Gap Finder scans local comic filenames for likely issue numbers, groups co
 
 Python 3.10 or newer is required.
 
-    python -m pip install "comic-gap-finder @ https://github.com/loganpendragonmultiverse/comic-gap-finder/releases/download/v1.0.0/comic_gap_finder-1.0.0-py3-none-any.whl"
+    python -m pip install "comic-gap-finder @ https://github.com/loganpendragonmultiverse/comic-gap-finder/releases/download/v1.1.1/comic_gap_finder-1.1.1-py3-none-any.whl"
     comic-gap-finder "D:\Comics\Night Watch" --markdown gaps.md --json gaps.json
     comic-gap-finder "D:\Comics\Night Watch" --expected-start 1 --expected-end 50 --fail-on-gaps
 
@@ -34,7 +34,7 @@ Version 1.0.0 is feature complete for its conservative filename rules. Contribut
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
 
 
-## 1.1.0 candidate
+## Version 1.1.0
 
 Use `--expectations expectations.json` to apply a separate integer range to each named series:
 

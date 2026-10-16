@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.1
+## 1.1.1 - 2026-10-16
 
 - Correct release wording and the original publication date; update installation references. Feature behavior is unchanged.
 

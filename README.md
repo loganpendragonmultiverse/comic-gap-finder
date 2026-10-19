@@ -6,7 +6,7 @@ Comic Gap Finder scans local comic filenames for likely issue numbers, groups co
 
 Python 3.10 or newer is required.
 
-    python -m pip install "comic-gap-finder @ https://github.com/loganpendragonmultiverse/comic-gap-finder/releases/download/v1.1.1/comic_gap_finder-1.1.1-py3-none-any.whl"
+    python -m pip install "comic-gap-finder @ https://github.com/loganpendragonmultiverse/comic-gap-finder/releases/download/v1.1.2/comic_gap_finder-1.1.2-py3-none-any.whl"
     comic-gap-finder "D:\Comics\Night Watch" --markdown gaps.md --json gaps.json
     comic-gap-finder "D:\Comics\Night Watch" --expected-start 1 --expected-end 50 --fail-on-gaps
 
@@ -43,3 +43,12 @@ Use `--expectations expectations.json` to apply a separate integer range to each
 ```
 
 Series names use the existing normalized filename grouping. Duplicate normalized names are rejected. Each rule requires both bounds; it overrides the global range for that series. Configured series with no files are still reported. Omission reasons appear in JSON and Markdown and suppress only those missing integer numbers. They do not hide present files, duplicates, decimals, annuals, or ambiguous filenames. Global options and scans without a configuration keep their existing behavior. Bounds are limited to -1000 through 100000 (at most 101001 integer numbers per series). Decimal issues remain evidence, not integer range members. Annuals remain separate filename-inferred series; ambiguous identities require review.
+
+## Version 1.1.2
+
+Keep distinct non-Latin series separate and leave explicit issue ranges unresolved.
+
+- Preserve Unicode letters and digits in grouping and exact decimal issue values; quarantine compound explicit issue numbers and reject duplicate expectation JSON keys.
+- Reserve report files exclusively, preflight paired destinations, and render titles, paths and omission reasons literally in Markdown.
+
+Reports contain local filenames and authored text. Markdown displays line breaks as literal `\n`/`\r`; JSON retains exact strings. Every output must be a distinct new path. Existing files, symlink destinations and a file created before exclusive opening are refused with exit 2. Both destinations are checked before writing, but paired reports are not a transaction: a later write or stdout failure can leave an earlier newly created report. Nothing is deleted automatically. Keep reports outside the scanned tree when repeating a scan.

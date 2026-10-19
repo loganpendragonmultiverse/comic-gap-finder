@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from .markdown import literal
 from .models import ScanReport
 
 
@@ -14,7 +15,7 @@ def render_markdown(report: ScanReport) -> str:
     lines = [
         "# Comic gap report",
         "",
-        f"Scanned: {report.root}",
+        f"Scanned: {literal(str(report.root))}",
         "",
         (
             f"Parsed {summary['parsedFiles']} files across {summary['series']} series; "
@@ -27,7 +28,7 @@ def render_markdown(report: ScanReport) -> str:
     for series in report.series:
         lines.extend(
             [
-                f"## {series.name}",
+                f"## {literal(series.name)}",
                 "",
                 "Issues: " + ", ".join(format(comic.issue, "f") for comic in series.comics),
                 "",
@@ -42,12 +43,13 @@ def render_markdown(report: ScanReport) -> str:
         if series.intentional_omissions:
             lines.extend(["Intentional omissions:", ""])
             lines.extend(
-                f"- #{n}: {reason}" for n, reason in sorted(series.intentional_omissions.items())
+                f"- #{n}: {literal(reason)}"
+                for n, reason in sorted(series.intentional_omissions.items())
             )
             lines.append("")
     if report.ambiguous:
         lines.extend(
-            ["## Ambiguous filenames", "", *[f"- {item}" for item in report.ambiguous], ""]
+            ["## Ambiguous filenames", "", *[f"- {literal(item)}" for item in report.ambiguous], ""]
         )
     lines.extend(
         [

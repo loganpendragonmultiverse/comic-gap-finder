@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2 - 2026-10-19
+
+- Preserve Unicode letters and digits in grouping and exact decimal issue values; quarantine compound explicit issue numbers and reject duplicate expectation JSON keys.
+- Reserve report files exclusively, preflight paired destinations, and render titles, paths and omission reasons literally in Markdown.
+
 ## 1.1.1 - 2026-10-16
 
 - Correct release wording and the original publication date; update installation references. Feature behavior is unchanged.

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from . import __version__
 from .core import scan_directory
+from .output import validate_outputs, write_report, write_stdout
 from .render import render_json, render_markdown
 
 
@@ -29,6 +30,15 @@ def parser() -> argparse.ArgumentParser:
     return result
 
 
+def unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate expectations key: {key}")
+        result[key] = value
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
@@ -37,27 +47,28 @@ def main(argv: list[str] | None = None) -> int:
             recursive=args.recursive,
             expected_start=args.expected_start,
             expected_end=args.expected_end,
-            expectations=json.loads(args.expectations.read_text(encoding="utf-8"))
+            expectations=json.loads(
+                args.expectations.read_text(encoding="utf-8"), object_pairs_hook=unique_object
+            )
             if args.expectations
             else None,
         )
         markdown = render_markdown(report)
+        validate_outputs([path for path in (args.json_path, args.markdown) if path])
         if args.json_path:
             write_new(args.json_path, render_json(report))
         if args.markdown:
             write_new(args.markdown, markdown)
         if not args.json_path and not args.markdown:
-            print(markdown)
+            write_stdout(markdown + "\n")
         has_gaps = any(series.missing for series in report.series)
         return 1 if args.fail_on_gaps and has_gaps else 0
-    except (OSError, TypeError, ValueError) as exc:
+    except (OSError, TypeError, ValueError, UnicodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
 
 def write_new(path: Path, content: str) -> None:
-    target = path.expanduser().resolve()
-    if target.exists():
-        raise ValueError(f"output already exists: {target}")
+    target = path.expanduser()
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(content, encoding="utf-8", newline="\n")
+    write_report(target, content)

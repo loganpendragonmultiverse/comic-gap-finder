@@ -23,7 +23,10 @@ def scan_directory(
     expected_end: int | None = None,
     expectations: dict[str, object] | None = None,
 ) -> ScanReport:
-    scan_root = root.expanduser().resolve()
+    try:
+        scan_root = root.expanduser().resolve()
+    except RuntimeError as exc:
+        raise ValueError("scan root contains a symlink loop") from exc
     if not scan_root.is_dir():
         raise ValueError(f"scan root is not a directory: {scan_root}")
     if expected_start is not None and expected_end is not None and expected_start > expected_end:
@@ -75,11 +78,13 @@ def parse_filename(path: Path) -> tuple[ParsedComic | None, str]:
     explicit = list(EXPLICIT.finditer(stem))
     if len(explicit) == 1:
         match = explicit[0]
+        if re.match(r"\s*[.\-–—]\s*\d", stem[match.end() :]):
+            return None, "issue ranges or compound numbers require review"
         issue = decimal_issue(match.group("number"))
         if issue is None:
             return None, "invalid explicit issue number"
         series = clean_series(stem[: match.start()] or stem[match.end() :])
-        if not series:
+        if not series or not normalize_series(series):
             return None, "series name could not be inferred"
         return ParsedComic(path, series, issue, "explicit marker"), ""
     if len(explicit) > 1:
@@ -98,7 +103,7 @@ def parse_filename(path: Path) -> tuple[ParsedComic | None, str]:
         return None, "no unique unmarked issue number"
     match, issue = candidates[0]
     series = clean_series(without_volume[: match.start()] or without_volume[match.end() :])
-    if not series:
+    if not series or not normalize_series(series):
         return None, "series name could not be inferred"
     return ParsedComic(path, series, issue, "single number token"), ""
 
@@ -151,7 +156,12 @@ def decimal_issue(value: str) -> Decimal | None:
         return None
     if not number.is_finite() or number < -1000 or number > 100000:
         return None
-    return number.normalize()
+    # Decimal.normalize() rounds to the active context precision. Filename
+    # evidence must stay exact, even immediately above/below an integer.
+    text = format(number, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return Decimal(text)
 
 
 def clean_series(value: str) -> str:
@@ -163,7 +173,7 @@ def clean_series(value: str) -> str:
 
 
 def normalize_series(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", value.casefold())
+    return "".join(character for character in value.casefold() if character.isalnum())
 
 
 def validate_bound(value: int | None) -> None:
